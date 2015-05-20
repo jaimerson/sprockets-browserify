@@ -13,7 +13,17 @@ module Sprockets
     end
 
     def evaluate(scope, locals, &block)
-      if (scope.pathname.dirname+'package.json').exist?
+      @browserify = false
+
+      # must include /* sprockets browserify: true */ directive
+      # taken from https://github.com/filaraujo/sprockets-browserify/commit/ca4794a0c61646f2e6ee0af8896f773e02edc818
+      File.open(scope.pathname, &:readline).
+        scan(/sprockets.*browserify:\s*(false|true)/) do |groups|
+
+        @browserify = groups[0] == 'true'
+      end
+
+      if (scope.pathname.dirname+'package.json').exist? && @browserify
         deps = `#{browserify_executable} --list #{scope.pathname}`
         unless $?.success?
           puts deps
